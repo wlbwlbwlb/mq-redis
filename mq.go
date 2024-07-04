@@ -27,16 +27,16 @@ func Init(opts ...Option) (e error) {
 			psc.Unsubscribe()
 		}()
 		for {
-			switch msg := psc.Receive().(type) {
+			switch recv := psc.Receive().(type) {
 			case redis.Message:
-				//fmt.Printf("channel=%s, pattern=%s, data=%s\n", msg.Channel, msg.Pattern, msg.Data)
-				if handle, ok := getHandler(msg.Channel); ok {
-					handle(msg)
+				//fmt.Printf("channel=%s, pattern=%s, data=%s\n", recv.Channel, recv.Pattern, recv.Data)
+				if f, ok := getHandler(recv.Channel); ok {
+					f(recv)
 				}
 			case redis.Subscription:
-				fmt.Printf("kind=%s, channel=%s, count=%d\n", msg.Kind, msg.Channel, msg.Count)
+				fmt.Printf("kind=%s, channel=%s, count=%d\n", recv.Kind, recv.Channel, recv.Count)
 			case error:
-				fmt.Printf("%+v\n", msg)
+				fmt.Printf("%+v\n", recv)
 				//return
 			}
 		}
