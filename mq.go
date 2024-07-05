@@ -10,9 +10,9 @@ import (
 
 var opt Options
 
-func Init(opts ...Option) (e error) {
-	for _, f := range opts {
-		f(&opt)
+func Init(opts ...OptionFunc) (e error) {
+	for _, fn := range opts {
+		fn(&opt)
 	}
 	psc := redis.PubSubConn{
 		Conn: opt.pool.Get(),

@@ -9,9 +9,9 @@ type Options struct {
 	//conn redis.Conn
 }
 
-type Option func(*Options)
+type OptionFunc func(*Options)
 
-func Pool(pool *redis.Pool) Option {
+func Pool(pool *redis.Pool) OptionFunc {
 	return func(opt *Options) {
 		opt.pool = pool
 	}
