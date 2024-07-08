@@ -27,12 +27,15 @@ func Init(pool *redis.Pool, opts ...OptionFunc) (e error) {
 	}
 	go func() {
 		defer func() {
+			//取消订阅
 			psc.Unsubscribe()
+			//关闭连接
+			psc.Close()
 		}()
 		for {
 			switch recv := psc.Receive().(type) {
 			case redis.Message:
-				//fmt.Printf("channel=%s, pattern=%s, data=%s\n", recv.Channel, recv.Pattern, recv.Data)
+				fmt.Printf("channel=%s, pattern=%s, data=%s\n", recv.Channel, recv.Pattern, recv.Data)
 				if f, ok := getHandler(recv.Channel); ok {
 					f(recv)
 				}
