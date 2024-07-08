@@ -10,7 +10,10 @@ import (
 
 var opt Options
 
-func Init(opts ...OptionFunc) (e error) {
+func Init(pool *redis.Pool, opts ...OptionFunc) (e error) {
+	opt = Options{
+		pool: pool,
+	}
 	for _, fn := range opts {
 		fn(&opt)
 	}
