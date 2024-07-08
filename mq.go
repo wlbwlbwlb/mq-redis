@@ -3,8 +3,6 @@ package mq
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
-
 	"github.com/gomodule/redigo/redis"
 )
 
@@ -35,14 +33,20 @@ func Init(pool *redis.Pool, opts ...OptionFunc) (e error) {
 		for {
 			switch recv := psc.Receive().(type) {
 			case redis.Message:
-				fmt.Printf("channel=%s, pattern=%s, data=%s\n", recv.Channel, recv.Pattern, recv.Data)
-				if f, ok := getHandler(recv.Channel); ok {
-					f(recv)
+				if opt.logger != nil {
+					opt.logger.Printf("channel=%s, pattern=%s, data=%s\n", recv.Channel, recv.Pattern, recv.Data)
+				}
+				if fn, ok := getHandler(recv.Channel); ok {
+					fn(recv)
 				}
 			case redis.Subscription:
-				fmt.Printf("kind=%s, channel=%s, count=%d\n", recv.Kind, recv.Channel, recv.Count)
+				if opt.logger != nil {
+					opt.logger.Printf("kind=%s, channel=%s, count=%d\n", recv.Kind, recv.Channel, recv.Count)
+				}
 			case error:
-				fmt.Printf("%+v\n", recv)
+				if opt.logger != nil {
+					opt.logger.Printf("%+v\n", recv)
+				}
 				//return
 			}
 		}
@@ -65,8 +69,8 @@ func Sub(channel string, handler HandlerFunc) (e error) {
 	return
 }
 
-func getHandler(channel string) (f HandlerFunc, ok bool) {
-	f, ok = handlers[channel]
+func getHandler(channel string) (fn HandlerFunc, ok bool) {
+	fn, ok = handlers[channel]
 	return
 }
 
