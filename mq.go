@@ -15,40 +15,52 @@ func Init(pool *redis.Pool, opts ...OptionFunc) (e error) {
 	for _, fn := range opts {
 		fn(&opt)
 	}
-	psc := redis.PubSubConn{
-		Conn: opt.pool.Get(),
-	}
-	for channel, _ := range handlers {
-		if e = psc.Subscribe(channel); e != nil {
-			return
-		}
-	}
 	go func() {
-		defer func() {
-			//取消订阅
-			psc.Unsubscribe()
-			//关闭连接
-			psc.Close()
-		}()
 		for {
-			switch recv := psc.Receive().(type) {
-			case redis.Message:
-				if opt.logger != nil {
-					opt.logger.Printf("channel=%s, pattern=%s, data=%s\n", recv.Channel, recv.Pattern, recv.Data)
-				}
-				if fn, ok := getHandler(recv.Channel); ok {
-					fn(recv)
-				}
-			case redis.Subscription:
-				if opt.logger != nil {
-					opt.logger.Printf("kind=%s, channel=%s, count=%d\n", recv.Kind, recv.Channel, recv.Count)
-				}
-			case error:
-				if opt.logger != nil {
-					opt.logger.Printf("%+v\n", recv)
-				}
-				//return
+			psc := redis.PubSubConn{
+				Conn: opt.pool.Get(),
 			}
+			stop := func() {
+				//取消订阅
+				psc.Unsubscribe()
+				//关闭连接
+				psc.Close()
+			}
+
+			for channel, _ := range handlers {
+				if e = psc.Subscribe(channel); e != nil {
+					break //太多了，不写日志
+				}
+			}
+			if e != nil {
+				stop()
+				continue //订阅了一部分
+			}
+
+			for {
+				switch recv := psc.Receive().(type) {
+				case redis.Message:
+					if opt.logger != nil {
+						opt.logger.Printf("channel=%s, pattern=%s, data=%s\n", recv.Channel, recv.Pattern, recv.Data)
+					}
+					if fn, ok := getHandler(recv.Channel); ok {
+						fn(recv)
+					}
+				case redis.Subscription:
+					if opt.logger != nil {
+						opt.logger.Printf("kind=%s, channel=%s, count=%d\n", recv.Kind, recv.Channel, recv.Count)
+					}
+				case error:
+					if opt.logger != nil {
+						opt.logger.Printf("%+v\n", recv)
+					}
+					e = recv
+				}
+				if e != nil {
+					break //出错了
+				}
+			}
+			stop()
 		}
 	}()
 	return
