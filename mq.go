@@ -38,7 +38,7 @@ func Init(pool *redis.Pool, opts ...OptionFunc) (e error) {
 			}
 
 			for {
-				switch msg := psc.Receive().(type) { //无法干预，conn会逃逸
+				switch msg := psc.Receive().(type) { //无法干预，conn leaks
 				case redis.Message:
 					if opt.logger != nil {
 						opt.logger.Printf("channel=%s, pattern=%s, data=%s\n", msg.Channel, msg.Pattern, msg.Data)
