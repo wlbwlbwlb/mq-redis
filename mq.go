@@ -38,23 +38,23 @@ func Init(pool *redis.Pool, opts ...OptionFunc) (e error) {
 			}
 
 			for {
-				switch recv := psc.Receive().(type) {
+				switch msg := psc.Receive().(type) {
 				case redis.Message:
 					if opt.logger != nil {
-						opt.logger.Printf("channel=%s, pattern=%s, data=%s\n", recv.Channel, recv.Pattern, recv.Data)
+						opt.logger.Printf("channel=%s, pattern=%s, data=%s\n", msg.Channel, msg.Pattern, msg.Data)
 					}
-					if fn, ok := getHandler(recv.Channel); ok {
-						fn(recv)
+					if fn, ok := getHandler(msg.Channel); ok {
+						fn(msg)
 					}
 				case redis.Subscription:
 					if opt.logger != nil {
-						opt.logger.Printf("kind=%s, channel=%s, count=%d\n", recv.Kind, recv.Channel, recv.Count)
+						opt.logger.Printf("kind=%s, channel=%s, count=%d\n", msg.Kind, msg.Channel, msg.Count)
 					}
 				case error:
 					if opt.logger != nil {
-						opt.logger.Printf("%+v\n", recv)
+						opt.logger.Printf("%+v\n", msg)
 					}
-					e = recv
+					e = msg
 				}
 				if e != nil {
 					break //出错了
