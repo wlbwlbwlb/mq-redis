@@ -1,8 +1,8 @@
 package mq
 
 import (
-	"encoding/json"
 	"errors"
+
 	"github.com/gomodule/redigo/redis"
 )
 
@@ -66,13 +66,13 @@ func Init(pool *redis.Pool, opts ...OptionFunc) (e error) {
 	return
 }
 
-func Pub(channel string, message json.RawMessage) (e error) {
+func Pub(channel string, msg []byte) (e error) {
 	if nil == opt.pool {
 		return errors.New("init first")
 	}
 	conn := opt.pool.Get()
 	defer conn.Close()
-	_, e = conn.Do("PUBLISH", channel, message)
+	_, e = conn.Do("PUBLISH", channel, msg)
 	return
 }
 
@@ -88,4 +88,4 @@ func getHandler(channel string) (fn HandlerFunc, ok bool) {
 
 var handlers = make(map[string]HandlerFunc)
 
-type HandlerFunc func(message redis.Message) error
+type HandlerFunc func(msg redis.Message) error
